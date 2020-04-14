@@ -1,2 +1,2 @@
-# wps
-Wener's Personal Service
+# intro
+CORE DNS MySQL Plugin
