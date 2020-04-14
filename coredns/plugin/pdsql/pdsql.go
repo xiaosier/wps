@@ -1,6 +1,7 @@
 package pdsql
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -62,7 +63,8 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 	var checkRecord = false
 
 	if err := self.Where(query).Find(&records).Error; err != nil {
-		self.Log.Info("can not find record, detail: ", err.Error())
+		//self.Log.Info("can not find record, detail: ", err.Error())
+		fmt.Println(records, err)
 		for {
 			if err == gorm.ErrRecordNotFound && state.Type() == "A" {
 				// if can not find A record, go to find CNAME record
@@ -87,10 +89,9 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 			}
 		}
 	} else {
-		self.Log.Info("called")
-		self.Log.Info("record length", len(records))
 		checkRecord = true
 	}
+	fmt.Println("called")
 	if checkRecord {
 		if len(records) == 0 {
 			var err error
