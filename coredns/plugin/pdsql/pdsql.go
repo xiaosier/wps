@@ -20,10 +20,9 @@ const logPrefix = "pdsql"
 
 type PowerDNSGenericSQLBackend struct {
 	*gorm.DB
-	Debug          bool
-	Next           plugin.Handler
-	Log            *BLogs
-	LogInitSuccess bool
+	Debug bool
+	Next  plugin.Handler
+	Log   *BLogs
 }
 
 func (self PowerDNSGenericSQLBackend) Name() string { return Name }
@@ -35,31 +34,8 @@ func (self PowerDNSGenericSQLBackend) InitLogs() {
 	} else {
 		logLevel = BAK
 	}
-	logs, err := NewLogs(LogPath, logPrefix, logLevel, true)
-	if err != nil {
-		self.LogInitSuccess = false
-		return
-	} else {
-		self.LogInitSuccess = true
-	}
+	logs, _ := NewLogs(LogPath, logPrefix, logLevel, true)
 	self.Log = logs
-}
-
-func (self PowerDNSGenericSQLBackend) WriteLog(logInterface string, format string, a ...interface{}) {
-	if !self.LogInitSuccess {
-		// log not init success
-		return
-	}
-	switch logInterface {
-	case "Info":
-		self.Log.Info(format, a)
-	case "Debug":
-		self.Log.Debug(format, a)
-	case "Warn":
-		self.Log.Warn(format, a)
-	case "Error":
-		self.Log.Error(format, a)
-	}
 }
 
 func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
@@ -86,7 +62,7 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 	var checkRecord = false
 
 	if err := self.Where(query).Find(&records).Error; err != nil {
-		self.WriteLog("Info", "can not find record, detail: ", err.Error())
+		self.Log.Info("can not find record, detail: ", err.Error())
 		for {
 			if err == gorm.ErrRecordNotFound && state.Type() == "A" {
 				// if can not find A record, go to find CNAME record
@@ -111,8 +87,8 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 			}
 		}
 	} else {
-		self.WriteLog("Info", "called")
-		self.WriteLog("Info", "record length", len(records))
+		self.Log.Info("called")
+		self.Log.Info("record length", len(records))
 		checkRecord = true
 	}
 	if checkRecord {
