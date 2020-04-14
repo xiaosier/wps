@@ -1,5 +1,3 @@
-// Package whoami implements a plugin that returns details about the resolving
-// querying it.
 package pdsql
 
 import (
@@ -16,17 +14,58 @@ import (
 )
 
 const Name = "pdsql"
+const Debug = false
+const LogPath = "/data0/logs/"
+const logPrefix = "pdsql"
 
 type PowerDNSGenericSQLBackend struct {
 	*gorm.DB
-	Debug bool
-	Next  plugin.Handler
+	Debug          bool
+	Next           plugin.Handler
+	Log            *BLogs
+	LogInitSuccess bool
 }
 
 func (self PowerDNSGenericSQLBackend) Name() string { return Name }
+
+func (self PowerDNSGenericSQLBackend) InitLogs() {
+	var logLevel int
+	if Debug {
+		logLevel = DEBUG
+	} else {
+		logLevel = BAK
+	}
+	logs, err := NewLogs(LogPath, logPrefix, logLevel, true)
+	if err != nil {
+		self.LogInitSuccess = false
+		return
+	} else {
+		self.LogInitSuccess = true
+	}
+	self.Log = logs
+}
+
+func (self PowerDNSGenericSQLBackend) WriteLog(logInterface string, format string, a ...interface{}) {
+	if !self.LogInitSuccess {
+		// log not init success
+		return
+	}
+	switch logInterface {
+	case "Info":
+		self.Log.Info(format, a)
+	case "Debug":
+		self.Log.Debug(format, a)
+	case "Warn":
+		self.Log.Warn(format, a)
+	case "Error":
+		self.Log.Error(format, a)
+	}
+}
+
 func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: r}
-
+	// start log
+	self.InitLogs()
 	a := new(dns.Msg)
 	a.SetReply(r)
 	a.Compress = true
@@ -44,21 +83,38 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 		query.Type = ""
 	}
 
+	var checkRecord = false
+
 	if err := self.Where(query).Find(&records).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			query.Type = "SOA"
-			if self.Where(query).Find(&records).Error == nil {
-				rr := new(dns.SOA)
-				rr.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeSOA, Class: state.QClass()}
-				if ParseSOA(rr, records[0].Content) {
-					a.Extra = append(a.Extra, rr)
+		for {
+			if state.Type() == "A" {
+				// if can not find A record, go to find CNAME record
+				query.Type = "CNAME"
+				if self.Where(query).Find(&records).Error == nil {
+					checkRecord = true
+					break
 				}
 			}
-		} else {
-			return dns.RcodeServerFailure, err
+			if err == gorm.ErrRecordNotFound {
+				query.Type = "SOA"
+				if self.Where(query).Find(&records).Error == nil {
+					rr := new(dns.SOA)
+					rr.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeSOA, Class: state.QClass()}
+					if ParseSOA(rr, records[0].Content) {
+						a.Extra = append(a.Extra, rr)
+					}
+				}
+				break
+			} else {
+				return dns.RcodeServerFailure, err
+			}
 		}
 	} else {
+		checkRecord = true
+	}
+	if checkRecord {
 		if len(records) == 0 {
+			var err error
 			records, err = self.SearchWildcard(state.QName(), state.QType())
 			if err != nil {
 				return dns.RcodeServerFailure, err
