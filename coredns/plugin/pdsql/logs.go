@@ -7,6 +7,7 @@ import (
 	"path"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -76,8 +77,8 @@ func (l *BLogs) init() error {
 	l.Close()
 
 	if l.dupStd && runtime.GOOS != "windows" {
-		//syscall.Dup2(int(fp.Fd()), syscall.Stdout)
-		//syscall.Dup2(int(fp.Fd()), syscall.Stderr)
+		syscall.Dup2(int(fp.Fd()), syscall.Stdout)
+		syscall.Dup2(int(fp.Fd()), syscall.Stderr)
 	}
 
 	l.fp = fp
