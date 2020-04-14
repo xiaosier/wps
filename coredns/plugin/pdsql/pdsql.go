@@ -63,18 +63,19 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 	var checkRecord = false
 
 	if err := self.Where(query).Find(&records).Error; err != nil {
-		//self.Log.Info("can not find record, detail: ", err.Error())
-		fmt.Println(records, err)
+		fmt.Println("query database error" + err.Error())
+		return dns.RcodeServerFailure, err
+	}
+	if len(records) == 0 {
 		for {
-			if err == gorm.ErrRecordNotFound && state.Type() == "A" {
+			if state.Type() == "A" {
 				// if can not find A record, go to find CNAME record
 				query.Type = "CNAME"
 				if self.Where(query).Find(&records).Error == nil {
 					checkRecord = true
 					break
 				}
-			}
-			if err == gorm.ErrRecordNotFound {
+			} else {
 				query.Type = "SOA"
 				if self.Where(query).Find(&records).Error == nil {
 					rr := new(dns.SOA)
@@ -83,15 +84,12 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 						a.Extra = append(a.Extra, rr)
 					}
 				}
-				break
-			} else {
-				return dns.RcodeServerFailure, err
 			}
+			break
 		}
 	} else {
 		checkRecord = true
 	}
-	fmt.Println("called")
 	if checkRecord {
 		if len(records) == 0 {
 			var err error
