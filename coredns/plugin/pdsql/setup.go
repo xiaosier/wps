@@ -7,7 +7,7 @@ import (
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 	"github.com/jinzhu/gorm"
-	pdnsmodel "github.com/wenerme/wps/pdns/model"
+	pdnsmodel "github.com/xiaosier/wps/pdns/model"
 )
 
 func init() {

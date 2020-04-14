@@ -1,4 +1,4 @@
-module github.com/wenerme/wps
+module github.com/xiaosier/wps
 
 go 1.13
 
@@ -10,7 +10,6 @@ require (
 	github.com/jinzhu/gorm v1.9.11
 	github.com/miekg/dns v1.1.22
 	github.com/parnurzeal/gorequest v0.2.16
-	github.com/smartystreets/goconvey v1.6.4 // indirect
+	github.com/wenerme/wps v0.0.0-20191105094758-5c216d826ac7 // indirect
 	golang.org/x/net v0.0.0-20191105084925-a882066a44e0
-	moul.io/http2curl v1.0.0 // indirect
 )
