@@ -100,15 +100,18 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 				} else {
 					rr.Ptr = v.Content + "."
 				}
+			case *dns.CNAME:
+				rr.Hdr = hrd
+				if strings.HasSuffix(v.Content, ".") {
+					rr.Target = v.Content
+				} else {
+					rr.Target = v.Content + "."
+				}
 			default:
 				// drop unsupported
 			}
 
-			if rr == nil {
-				// invalid record
-			} else {
-				a.Answer = append(a.Answer, rr)
-			}
+			a.Answer = append(a.Answer, rr)
 		}
 	}
 	if len(a.Answer) == 0 {

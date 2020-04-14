@@ -1,2 +1,1 @@
-# intro
-CORE DNS MySQL Plugin
+# introCORE DNS MySQL Plugin
