@@ -14,7 +14,7 @@ import (
 )
 
 const Name = "pdsql"
-const Debug = false
+const Debug = true
 const LogPath = "/data0/logs/"
 const logPrefix = "pdsql"
 
@@ -87,7 +87,7 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 
 	if err := self.Where(query).Find(&records).Error; err != nil {
 		for {
-			if state.Type() == "A" {
+			if err == gorm.ErrRecordNotFound && state.Type() == "A" {
 				// if can not find A record, go to find CNAME record
 				query.Type = "CNAME"
 				if self.Where(query).Find(&records).Error == nil {
@@ -110,6 +110,8 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 			}
 		}
 	} else {
+		self.WriteLog("Info", "called")
+		self.WriteLog("Info", "record length", len(records))
 		checkRecord = true
 	}
 	if checkRecord {
