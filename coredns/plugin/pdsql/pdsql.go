@@ -86,7 +86,7 @@ func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.Respon
 	var checkRecord = false
 
 	if err := self.Where(query).Find(&records).Error; err != nil {
-		self.WriteLog("can not find record, detail: ", err.Error())
+		self.WriteLog("Info", "can not find record, detail: ", err.Error())
 		for {
 			if err == gorm.ErrRecordNotFound && state.Type() == "A" {
 				// if can not find A record, go to find CNAME record
