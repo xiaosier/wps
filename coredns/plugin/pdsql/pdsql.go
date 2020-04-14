@@ -15,34 +15,17 @@ import (
 )
 
 const Name = "pdsql"
-const Debug = true
-const LogPath = "/data0/logs/"
-const logPrefix = "pdsql"
 
 type PowerDNSGenericSQLBackend struct {
 	*gorm.DB
 	Debug bool
 	Next  plugin.Handler
-	Log   *BLogs
 }
 
 func (self PowerDNSGenericSQLBackend) Name() string { return Name }
 
-func (self PowerDNSGenericSQLBackend) InitLogs() {
-	var logLevel int
-	if Debug {
-		logLevel = DEBUG
-	} else {
-		logLevel = BAK
-	}
-	logs, _ := NewLogs(LogPath, logPrefix, logLevel, true)
-	self.Log = logs
-}
-
 func (self PowerDNSGenericSQLBackend) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: r}
-	// start log
-	self.InitLogs()
 	a := new(dns.Msg)
 	a.SetReply(r)
 	a.Compress = true
